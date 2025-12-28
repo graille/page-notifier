@@ -1,0 +1,14 @@
+[project]
+name = "change-detector"
+version = "1.0.0"
+description = "A webpage change detector with Discord notifications"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "curl-cffi~=0.14",
+    "python-dotenv~=1.2",
+    "beautifulsoup4~=4.14",
+    "pytz~=2025.1",
+    "aiohttp~=3.13",
+]
+

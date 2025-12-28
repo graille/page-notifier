@@ -1,0 +1,26 @@
+services:
+  change-detector:
+    build: .
+    container_name: change-detector
+    restart: unless-stopped
+    environment:
+      - WEBHOOK_DISCORD=${WEBHOOK_DISCORD}
+      - WEBPAGE_URL=${WEBPAGE_URL}
+      - WEBPAGE_ELEMENT=${WEBPAGE_ELEMENT:-}
+      - WEBPAGE_RELOAD_TIME=${WEBPAGE_RELOAD_TIME:-60000}
+      - WEBPAGE_RELOAD_STD=${WEBPAGE_RELOAD_STD:-500}
+      - TIMEZONE=${TIMEZONE:-Europe/Paris}
+    dns:
+      # Cloudflare DNS
+      - 1.1.1.1
+      - 1.0.0.1
+      # Google DNS
+      - 8.8.8.8
+      - 8.8.4.4
+    # Optional: limit resources
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
