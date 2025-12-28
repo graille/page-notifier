@@ -7,6 +7,7 @@ and sends notifications when changes are detected.
 
 import asyncio
 import difflib
+import logging
 import random
 import sys
 from datetime import datetime
@@ -25,6 +26,7 @@ from config import (
 )
 from notifiers import DiscordNotifier
 from page_tracker import extract_element, normalize_html
+from utils.logs import setup_logging
 
 
 class ChangeDetector:
@@ -72,17 +74,7 @@ class ChangeDetector:
         self._last_request_time: datetime | None = None
         self._success_count: int = 0
         self._error_count: int = 0
-
-    def _log(self, level: str, message: str):
-        """
-        Log a message with timestamp.
-
-        :param level: The log level (INFO, WARNING, ERROR, DEBUG).
-        :param message: The message to log.
-        """
-        now = datetime.now(self._tz)
-        timestamp = now.strftime("%d-%m-%Y %H:%M:%S")
-        print(f"[{timestamp}] - {level} - {message}", flush=True)
+        self._logger = logging.getLogger(__name__)
 
     def _get_wait_time_ms(self) -> float:
         """
@@ -111,7 +103,7 @@ class ChangeDetector:
             return response.text
         except Exception as e:
             self._error_count += 1
-            self._log("ERROR", f"Failed to fetch page: {e}")
+            self._logger.error(f"Failed to fetch page: {e}")
             return None
 
     async def _check_for_changes(self, session: AsyncSession) -> bool:
@@ -126,7 +118,7 @@ class ChangeDetector:
         # Log time since last request
         if self._last_request_time:
             delta = (current_time - self._last_request_time).total_seconds()
-            self._log("DEBUG", f"Time since last request: {delta:.2f}s")
+            self._logger.debug(f"Time since last request: {delta:.2f}s")
 
         self._last_request_time = current_time
 
@@ -143,17 +135,16 @@ class ChangeDetector:
             normalized_content = normalize_html(element_html)
         except ValueError as e:
             self._error_count += 1
-            self._log("ERROR", f"Failed to extract element: {e}")
+            self._logger.error(f"Failed to extract element: {e}")
             return False
         
-        self._log("DEBUG", f"Normalized content: {normalized_content}")
+        self._logger.debug(f"Normalized content: {normalized_content}")
 
         # First run - store initial content
         if self._previous_content is None:
             self._previous_content = normalized_content
-            self._log(
-                "INFO",
-                f"Initial content stored. Success: {self._success_count}, Errors: {self._error_count}",
+            self._logger.info(
+                f"Initial content stored. Success: {self._success_count}, Errors: {self._error_count}"
             )
             return False
 
@@ -161,16 +152,14 @@ class ChangeDetector:
         if normalized_content != self._previous_content:
             old_content = self._previous_content
             self._previous_content = normalized_content
-            self._log(
-                "INFO",
-                f"CHANGE DETECTED! Success: {self._success_count}, Errors: {self._error_count}",
+            self._logger.info(
+                f"CHANGE DETECTED! Success: {self._success_count}, Errors: {self._error_count}"
             )
             await self._notify_change(old_content, normalized_content)
             return True
 
-        self._log(
-            "INFO",
-            f"No change. Success: {self._success_count}, Errors: {self._error_count}",
+        self._logger.info(
+            f"No change. Success: {self._success_count}, Errors: {self._error_count}"
         )
         return False
 
@@ -236,11 +225,11 @@ class ChangeDetector:
                     hostname=hostname,
                     diff=diff,
                 )
-                self._log("INFO", "Notification sent to Discord")
+                self._logger.info("Notification sent to Discord")
             except Exception as e:
-                self._log("ERROR", f"Failed to send notification: {e}")
+                self._logger.error(f"Failed to send notification: {e}")
         else:
-            self._log("WARNING", "No notifier configured, skipping notification")
+            self._logger.warning("No notifier configured, skipping notification")
 
     async def run(self):
         """
@@ -248,16 +237,17 @@ class ChangeDetector:
 
         Continuously checks the webpage for changes at the configured interval.
         """
-        self._log("INFO", f"Starting change detector for {self._url}")
-        self._log("INFO", f"Element selector: {self._element_selector or 'entire body'}")
-        self._log("INFO", f"Reload interval: {self._reload_time_ms}ms (std: {self._reload_std_ms}ms)")
+        self._logger.info(f"Starting change detector for {self._url}")
+        self._logger.info(f"Element selector: {self._element_selector or 'entire body'}")
+        self._logger.info(f"Reload interval: {self._reload_time_ms}ms (std: {self._reload_std_ms}ms)")
 
         async with AsyncSession(impersonate="firefox") as session:
             while True:
                 changed = await self._check_for_changes(session)
 
                 if changed:
-                    await self._notify_change()
+                    # _notify_change is already called in _check_for_changes when change is detected
+                    pass
 
                 wait_time = self._get_wait_time_ms() / 1000.0
                 await asyncio.sleep(wait_time)
@@ -274,6 +264,8 @@ async def async_main():
     """
     Async entry point for the change detector.
     """
+    setup_logging(TIMEZONE)
+    
     detector = ChangeDetector(
         url=WEBPAGE_URL,
         element_selector=WEBPAGE_ELEMENT,
@@ -286,7 +278,8 @@ async def async_main():
     try:
         await detector.run()
     except KeyboardInterrupt:
-        print("\nShutting down...")
+        logger = logging.getLogger(__name__)
+        logger.info("\nShutting down...")
     finally:
         await detector.close()
 
