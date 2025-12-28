@@ -168,7 +168,7 @@ wheels = [
 ]
 
 [[package]]
-name = "change-detector"
+name = "page-change-notifier"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

@@ -46,7 +46,7 @@ This is equivalent to selecting `#main`, then finding `.content` inside it, then
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd change-detector
+cd page-change-notifier
 
 # Install UV if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -66,11 +66,11 @@ uv run python main.py
 
 ```bash
 # Build the image
-docker buildx build -t change-detector .
+docker buildx build -t page-change-notifier .
 
 # Run with environment variables
 docker run -d \
-  --name change-detector \
+  --name page-change-notifier \
   --restart unless-stopped \
   --dns 1.1.1.1 \
   --dns 1.0.0.1 \
@@ -82,7 +82,7 @@ docker run -d \
   -e WEBPAGE_RELOAD_TIME="60000" \
   -e WEBPAGE_RELOAD_STD="500" \
   -e TIMEZONE="Europe/Paris" \
-  change-detector
+  page-change-notifier
 ```
 
 ### Using Docker Compose
@@ -118,7 +118,7 @@ You can also create a `docker-compose.override.yml` for custom configurations:
 
 ```yaml
 services:
-  change-detector:
+  page-change-notifier:
     environment:
       - WEBHOOK_DISCORD=https://discord.com/api/webhooks/xxx/yyy
       - WEBPAGE_URL=https://example.com/page
@@ -152,7 +152,7 @@ Example output:
 ## Architecture
 
 ```
-change-detector/
+page-change-notifier/
 ├── config.py           # Environment variable loading
 ├── main.py             # Main application loop
 ├── page_tracker.py     # HTML extraction utilities

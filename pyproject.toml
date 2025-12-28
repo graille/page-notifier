@@ -1,5 +1,5 @@
 [project]
-name = "change-detector"
+name = "page-change-notifier"
 version = "1.0.0"
 description = "A webpage change detector with Discord notifications"
 readme = "README.md"

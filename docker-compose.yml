@@ -1,7 +1,7 @@
 services:
-  change-detector:
+  page-change-notifier:
     build: .
-    container_name: change-detector
+    container_name: page-change-notifier
     restart: unless-stopped
     environment:
       - WEBHOOK_DISCORD=${WEBHOOK_DISCORD}
